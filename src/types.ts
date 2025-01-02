@@ -1,5 +1,4 @@
-import { Jwk, LocalKeyManager } from '@web5/crypto';
-import { DidCreateOptions, DidCreateVerificationMethod, DidDocument, DidService } from '@web5/dids';
+import { Did, DidCreateOptions, DidCreateVerificationMethod, DidDocument, DidService, DidVerificationMethod } from '@web5/dids';
 
 export enum DidBtc1RegisteredKeyType {
     /**
@@ -15,25 +14,14 @@ export enum DidBtc1Network {
     signet = 'signet',
     regtest = 'regtest',
 }
-export interface DidBtc1ServiceSingletonBeacon extends DidService {
-    id: '#singletonBeacon';
-    type: 'SingletonBeacon';
-    serviceEndpoint: string;
-}
 /**
  * Options for creating a Decentralized Identifier (DID) using the DID BTC1 method.
  */
 export interface DidBtc1CreateOptions<TKms> extends DidCreateOptions<TKms> {
-    /** DID BTC1 Version Number */
     version?: number;
-    /** Bitcoin Network */
-    network?: 'mainnet' | 'testnet' | 'signet' | 'regtest';
-    /** DID BTC1 Creation Type: deterministic or sidecar */
+    /** Deterministic or Sidecar */
     type?: string;
-    /** optional secp256k1 public key; required if type = 'deterministic' */
-    publicKey?: Uint8Array;
-    /** optional Jwk; required during method specific creation (deterministic or sidecar) */
-    jwk?: Jwk;
+    network?: 'mainnet' | 'testnet' | 'signet' | 'regtest';
     /**
      * Optional. An array of service endpoints associated with the DID.
      *
@@ -41,8 +29,6 @@ export interface DidBtc1CreateOptions<TKms> extends DidCreateOptions<TKms> {
      * associated entities. A service can be any type of service the DID subject wants to advertise,
      * including decentralized identity management services for further discovery, authentication,
      * authorization, or interaction.
-     * 
-     * @default [DidBtc1ServiceSingletonBeacon]; @see {@link DidBtc1ServiceSingletonBeacon}
      *
      * @see {@link https://www.w3.org/TR/did-core/#services | DID Core Specification, § Services}
      *
@@ -54,7 +40,7 @@ export interface DidBtc1CreateOptions<TKms> extends DidCreateOptions<TKms> {
      *     {
      *       id: '#singletonBeacon',
      *       type: 'SingletonBeacon',
-     *       serviceEndpoint: 'bitcoin:bech32_secp_pubkey',
+     *       serviceEndpoint: 'bitcoin:some-funded-address',
      *     }
      *   ]
      * };
@@ -65,7 +51,7 @@ export interface DidBtc1CreateOptions<TKms> extends DidCreateOptions<TKms> {
     /**
      * Optional. An array of verification methods to be included in the DID document.
      *
-     * By default, a newly created DID BTC1 document will contain a single verification method.
+     * By default, a newly created DID BTC1 document will contain a single Secp256k1 verification method.
      *
      * @see {@link https://www.w3.org/TR/did-core/#verification-methods | DID Core Specification, § Verification Methods}
      *
@@ -84,10 +70,6 @@ export interface DidBtc1CreateOptions<TKms> extends DidCreateOptions<TKms> {
     verificationMethods?: DidCreateVerificationMethod<TKms>[];
 }
 
-export type DidBtc1CreateResponse = {
-    did: string;
-    didDocument: DidDocument;
-    mnemonic?: string;
-};
+export type DidBtc1CreateResponse = { mnemonic?: string; didDocument: DidDocument; };
 
 export type IntermediateDidDocument = Omit<DidDocument, 'id' | 'verificationMethod'>;

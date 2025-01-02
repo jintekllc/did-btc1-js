@@ -1,8 +1,8 @@
 {
-    "name": "did-btc1-js",
+    "name": "did-btc1",
     "version": "0.2.0",
     "type": "module",
-    "description": "did-btc1-js is the typescript/javascript reference implementation of the did:btc1 spec. did:btc1 is a censorship resistant DID Method using the Bitcoin blockchain as a Verifiable Data Registry to announce changes to the DID document. It improves on prior work by allowing: zero-cost off-chain DID creation; aggregated updates for scalable on-chain update costs; long-term identifiers that can support frequent updates; private communication of the DID document; private DID resolution; and non-repudiation appropriate for serious contracts.",
+    "description": "did:btc1 is a censorship resistant DID Method using the Bitcoin blockchain as a Verifiable Data Registry to announce changes to the DID document. It improves on prior work by allowing: zero-cost off-chain DID creation; aggregated updates for scalable on-chain update costs; long-term identifiers that can support frequent updates; private communication of the DID document; private DID resolution; and non-repudiation appropriate for serious contracts.",
     "main": "./dist/cjs/index.js",
     "module": "./dist/esm/index.js",
     "types": "./dist/types/index.d.ts",
@@ -33,19 +33,19 @@
         "test:node": "pnpm build:tests:node && pnpm c8 mocha",
         "test:browser": "pnpm build:tests:browser && web-test-runner"
     },
-    "homepage": "https://github.com/jintekllc/did-btc1-js",
+    "homepage": "https://github.com/bnonni/did-btc1-js",
     "bugs": {
-        "url": "https://github.com/jintekllc/did-btc1-js/issues"
+        "url": "https://github.com/bnonni/did-btc1-js/issues"
     },
     "repository": {
         "type": "git",
-        "url": "git+ssh://git@github.com/jintekllc/did-btc1-js.git"
+        "url": "git+ssh://git@github.com/bnonni/did-btc1-js.git"
     },
     "license": "MPL-2.0",
     "contributors": [
         {
-            "name": "Jintek LLC",
-            "url": "https://github.com/jintekllc"
+            "name": "Bryan Nonni",
+            "url": "https://github.com/bnonni"
         }
     ],
     "files": [
@@ -107,7 +107,8 @@
         "node-stdlib-browser": "^1.2.1",
         "playwright": "^1.48.2",
         "rimraf": "^6.0.1",
-        "typescript": "^5.6.2",
-        "typescript-eslint": "^8.19.1"
+        "sinon": "^19.0.2",
+        "source-map-loader": "^5.0.0",
+        "typescript": "^5.6.2"
     }
 }

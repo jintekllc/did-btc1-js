@@ -43,18 +43,22 @@ export class DidBtc1 extends DidMethod {
   /**
    *
    * @param params.keyManager - The key manager to use for key operations.
-   * @param params.options - Optional parameters for creating the DID; @see {@link DidBtc1CreateOptions}.
+   * @param params.options - Optional parameters for creating the DID. See {@link DidBtc1CreateOptions}.
    * @returns A Promise resolving to a {@link DidBtc1CreateResponse} object containing the mnemonic
    */
 
   // TODO: Cleanup create; Generalize for both types. Abstract createDeterministic and createSidecar methods.
   // TODO: Remove LocalKeyManager and separate create options from Tkms
-  public static async create({ options = {} }: {
+  public static async create({
+    options = {}
+  }: {
     options?: DidBtc1CreateOptions<LocalKeyManager>;
   } = {}): Promise<DidBtc1CreateResponse> {
-    // Validate DID-method-specific requirements to prevent keys from being generated unnecessarily.
+    // Before processing the create operation, validate DID-method-specific requirements to prevent
+    // keys from being generated unnecessarily.
 
-    // Check 1: Validate the algorithm as supported by the DID BTC1 specification.
+    // Check 1: Validate that the algorithm for any given verification method is supported by the
+    // DID BTC1 specification.
     if (options.verificationMethods?.some(vm => !(vm.algorithm in AlgorithmToKeyTypeMap))) {
       throw new Error('One or more verification method algorithms are not supported');
     }
@@ -76,19 +80,18 @@ export class DidBtc1 extends DidMethod {
     }
 
     // Set the networkName to the default value if not provided.
-    options.network = options.network ?? 'mainnet';
-    options.version = options.version ?? 1;
+    const networkName = options?.network ?? 'mainnet';
 
-    const networkName = options.network;
-    // Set the network based on the options above.
-    const isMainnet = DidBtc1Network[options.network as keyof typeof DidBtc1Network];
-    const network = isMainnet
-      ? networks.bitcoin
-      : [DidBtc1Network.testnet, DidBtc1Network.signet].includes(networkName as DidBtc1Network)
+    // Set boolean flags for network types.
+    // Set the network object class based on the options above.
+    const isMainnet = networkName === DidBtc1Network.mainnet;
+    const network = isMainnet ? networks.bitcoin
+      : networkName === DidBtc1Network.testnet || networkName === DidBtc1Network.signet
         ? networks.testnet
         : networks.regtest;
 
-    // Set the coin type of the derivation path based on the network option.
+    // Set the derivation path based on the options above.
+    // Set the coin based on the network.
     const derivationPath = `m/44'/${isMainnet ? 0 : 1}'/0'/0/0`;
 
     // Generate random mnemonic and seed from mnemonic.
@@ -96,27 +99,28 @@ export class DidBtc1 extends DidMethod {
     const seed = await mnemonicToSeed(mnemonic);
 
     // Generate HDKey from seed.
-    const { publicKey, privateKey }: HDKey = HDKey.fromMasterSeed(seed).derive(derivationPath);
+    const hdkey = HDKey.fromMasterSeed(seed).derive(derivationPath);
 
-    // Ensure HDKey returns valid
-    if (!(publicKey && privateKey)) {
-      throw new Error('Failed to derive hd keypair');
+    // Ensure HDKeys are valid
+    if (!(hdkey.publicKey && hdkey.privateKey)) {
+      throw new Error('Failed to derive hd key');
     }
 
-    // Get x point from hd pubkey.
-    const { x, y } = secp256k1.ProjectivePoint.fromHex(publicKey) ?? {};
+    // Set a publicKey var from the hdkey.
+    const publicKey = hdkey.publicKey;
+    // Get x, y points from public key.
+    const { x } = secp256k1.ProjectivePoint.fromHex(publicKey) ?? {};
 
-    // Create JWK from hd pubkey x point, y point and privkey.
+    // Create JWK from x, y points and private key.
     const jwk = {
       kty: 'EC',
       crv: 'secp256k1',
       x: base64url.encode(bigintToBuffer(x)),
-      y: base64url.encode(bigintToBuffer(y)),
-      d: base64url.encode(Buffer.from(privateKey))
+      d: base64url.encode(Buffer.from(hdkey.privateKey))
     } as Jwk;
 
     // Create Intermediate DID Document.
-    const interDidDoc: IntermediateDidDocument = {
+    const iDidDocument: IntermediateDidDocument = {
       '@context': [
         'https://www.w3.org/ns/did/v1',
         'https://github.com/dcdpr/did-btc1'
@@ -142,81 +146,78 @@ export class DidBtc1 extends DidMethod {
       }]
     };
 
-    // Set the jwk in options.
-    options.jwk = jwk;
+    const didDocument: DidDocument = options.type === 'sidecar'
+      ? await this.createSidecar({ iDidDocument, options, jwk })
+      : await this.createDeterministic({ iDidDocument, options, jwk, publicKey });
 
-    // Call createDeterministic or createSidecar based on options.
-    if (!!options.type && options.type?.toLowerCase() !== 'deterministic') {
-      // Return DID and DID Document.
-      return await this.createSidecar({ interDidDoc, options });
-    }
-
-    // Set the public key in options.
-    options.publicKey = publicKey;
-
-    // Return DID, DID Document and mnemonic.
-    return { ...await this.createDeterministic({ interDidDoc, options }), mnemonic };
+    // Return mnemonic and DID Document.
+    return { mnemonic, didDocument };
   }
 
+  // TODO: Cleanup createDeterministic method.
   public static async createDeterministic({
-    interDidDoc,
-    options: { version, publicKey, jwk }
+    iDidDocument,
+    options,
+    publicKey,
+    jwk
   }: {
-    interDidDoc: IntermediateDidDocument;
-    options: DidBtc1CreateOptions<LocalKeyManager>;
-  }): Promise<DidBtc1CreateResponse> {
+    iDidDocument: IntermediateDidDocument;
+    options: any;
+    publicKey: any;
+    jwk: any;
+  }): Promise<DidDocument> {
     // Create DID Method prefix based on version.
-    const didMethodPrefix = version !== 1
-      ? `did:${this.methodName}:${version}:k1`
-      : `did:${this.methodName}`;
+    const didMethodPrefix = options.version !== 1
+      ? `did:${this.methodName}:${options.version}:k1`
+      : `did:${this.methodName}:k1`;
     // Bech32 encode the public key with 'k' hrp.
-    const methodSpecificId = bech32.encode('k', bech32.toWords(publicKey!));
+    const methodSpecificId = bech32.encode('k', bech32.toWords(publicKey));
     // Create DID from method prefix and method specific ID.
     const did = `${didMethodPrefix}:${methodSpecificId}`;
-    // Return deterministic DID & DID Document.
-    return {
-      did,
-      didDocument: {
-        ...interDidDoc,
-        id: did,
-        verificationMethod: [{
-          id: '#initialKey',
-          type: 'JsonWebKey',
-          controller: did,
-          publicKeyJwk: jwk
-        }]
-      } as DidDocument
-    };
+    // Set the DID Document ID and verification method.
+    const didDocument: DidDocument = iDidDocument as DidDocument;
+    didDocument.id = did;
+    didDocument.verificationMethod = [{
+      id: '#initialKey',
+      type: 'JsonWebKey',
+      controller: did,
+      publicKeyJwk: jwk
+    }]
+    // Return the DID Document.
+    return didDocument;
   }
 
-  public static async createSidecar({ interDidDoc, options: { version, jwk } }: {
-    interDidDoc: IntermediateDidDocument;
-    options: DidBtc1CreateOptions<LocalKeyManager>;
-  }): Promise<DidBtc1CreateResponse> {
+  // TODO: Cleanup createSidecar method.
+  public static async createSidecar({
+    iDidDocument,
+    options,
+    jwk
+  }: {
+    iDidDocument: IntermediateDidDocument;
+    options: any;
+    jwk: any;
+  }): Promise<DidDocument> {
     // Set the did method prefix based on the version.
-    const didMethodPrefix = version !== 1
-      ? `did:${this.methodName}:${version}:x1`
-      : `did:${this.methodName}`;
+    const didMethodPrefix = options.version !== 1
+      ? `did:${this.methodName}:${options.version}:x1`
+      : `did:${this.methodName}:x1`;
     // Create CID from the DID Document.
-    const cid = CID.create(1, json.code, await sha256.digest(json.encode(interDidDoc)));
+    const cid = CID.create(1, json.code, await sha256.digest(json.encode(iDidDocument)));
     // Bech32 encode the CID bytes with 'x' hrp.
     const methodSpecificId = bech32.encode('x', bech32.toWords(cid.bytes));
     // Create DID from method prefix and method specific ID.
     const did = `${didMethodPrefix}:${methodSpecificId}`;
-    // Return deterministic DID & DID Document.
-    return {
-      did,
-      didDocument: {
-        ...interDidDoc,
-        id: did,
-        verificationMethod: [{
-          id: '#initialKey',
-          type: 'JsonWebKey',
-          controller: did,
-          publicKeyJwk: jwk
-        }]
-      } as DidDocument
-    };
+    // Set the DID Document ID and verification method.
+    const didDocument: DidDocument = iDidDocument as DidDocument;
+    didDocument.id = did;
+    didDocument.verificationMethod = [{
+      id: '#initialKey',
+      type: 'JsonWebKey',
+      controller: did,
+      publicKeyJwk: jwk
+    }]
+    // Return the DID Document.
+    return didDocument;
   }
 
   /**
