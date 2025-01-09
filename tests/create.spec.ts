@@ -1,32 +1,88 @@
 import { DidBtc1 } from '../src/did-btc1.js';
+import { Did, DidDocument } from '@web5/dids';
 
-describe('applicant = new DcxApplicant({ config: applicantConfig })', () => {
+describe('DidBtc1 Create', () => {
 
     /**
      * @description Create a new did and did document using default settings (deterministic)
      */
-    describe('DidBtc1.create()', async () => {
+    describe('response (deterministic)', async () => {
         const response = await DidBtc1.create();
-        // Check response property "did"
+        // Check existence and typeof "did"
         it('should contain property "did" as a string', () => {
             expect(response).to.have.property('did').that.is.a('string');
         });
 
-        // Validate the did format
-        it('should contain property "did" as a string', () => {
-            expect(applicant.status).to.have.property('initialized').that.is.a('boolean').and.to.be.false;
+        describe('response.did', () => {
+            // Validate the did format
+            it('should contain string literal "did" "btc1" and "k1"', () => {
+                const [did, method, id] = response.did.split(':');
+                expect(did).to.equal('did');
+                expect(method).to.equal('btc1');
+                expect(id).to.be.a('string').and.to.startWith('k1');
+            });
+        })
+
+        // Check existence and typeof "didDocument"
+        it('should contain property "didDocument" as an object', () => {
+            expect(response).to.have.property('didDocument').that.is.an('object');
         });
 
-        // Check response property "didDocument"
-        it('should contain property "setup" as a boolean equal to false', () => {
-            expect(applicant.status).to.have.property('setup').that.is.a('boolean').and.to.be.false;
+        describe('response.didDocument', () => {
+            // Check specific type of "didDocument" as type DidDocument
+            it('should be an object of type DidDocument', () => {
+                expect(response.didDocument).to.be({} as DidDocument);
+            });
         });
-        
-        // Check response property "mnemonic"
+
+        // Check existence and typeof "mnemonic"
+        it('should contain property "mnemonic" as a string', () => {
+            expect(response).to.have.property('mnemonic').that.is.a('string');
+        });
+
+        describe('response.mnemonic', () => {
+            // Check existence and typeof "mnemonic" word length
+            it('should contain 12 words', () => {
+                expect(response).to.have.property('setup').that.is.a('string');
+            });
+        });
     });
 
-    console.log('deterministic', deterministic);
+    /**
+    * @description Create a new did and did document using custom settings (sidecar / non-deterministic)
+    */
+    describe('response (sidecar / non-deterministic)', async () => {
+        const response = await DidBtc1.create({ options: { type: 'sidecar' } });
+        // Check existence and typeof response property "did"
+        it('should contain property "did" as a string', () => {
+            expect(response).to.have.property('did').that.is.a('string');
+        });
 
-    const sidecar = await DidBtc1.create({ options: { type: 'sidecar' } });
-    console.log('sidecar', sidecar);
+        describe('response.did', () => {
+            // Validate the did format
+            it('should contain string literal "did" "btc1" and "x1"', () => {
+                const [did, method, id] = response.did.split(':');
+                expect(did).to.equal('did');
+                expect(method).to.equal('btc1');
+                expect(id).to.be.a('string').and.to.startWith('x1');
+            });
+        })
+
+        // Check existence and generic typeof "didDocument"
+        it('should contain property "didDocument" as an object', () => {
+            expect(response).to.have.property('didDocument').that.is.an('object');
+        });
+
+        describe('response.didDocument', () => {
+            // Check specific type of "didDocument" as type DidDocument
+            it('should be typeof DidDocument', () => {
+                expect(response.didDocument).to.be({} as DidDocument);
+            });
+        });
+
+        // Check non-existence of "mnemonic"
+        it('should not contain property "mnemonic"', () => {
+            expect(response).not.to.have.property('mnemonic');
+        });
+    });
 });

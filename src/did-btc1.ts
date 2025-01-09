@@ -147,7 +147,7 @@ export class DidBtc1 extends DidMethod {
     options.jwk = jwk;
 
     // Call createDeterministic or createSidecar based on options.
-    if (options.type?.toLowerCase() === 'sidecar') {
+    if (!!options.type && options.type?.toLowerCase() !== 'deterministic') {
     // Return DID and DID Document.
       return await this.createSidecar({ interDidDoc, options });
     }
