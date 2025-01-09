@@ -1,0 +1,1 @@
+export * from './did-btc1.js';
