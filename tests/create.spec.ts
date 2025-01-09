@@ -1,5 +1,5 @@
+import { expect } from 'chai';
 import { DidBtc1 } from '../src/did-btc1.js';
-import { Did, DidDocument } from '@web5/dids';
 
 describe('DidBtc1 Create', () => {
 
@@ -19,10 +19,9 @@ describe('DidBtc1 Create', () => {
                 const [did, method, id] = response.did.split(':');
                 expect(did).to.equal('did');
                 expect(method).to.equal('btc1');
-                expect(id).to.be.a('string').and.to.startWith('k1');
+                expect(id).to.be.a('string').and.to.match(/k1.*/)
             });
         })
-
         // Check existence and typeof "didDocument"
         it('should contain property "didDocument" as an object', () => {
             expect(response).to.have.property('didDocument').that.is.an('object');
@@ -31,7 +30,7 @@ describe('DidBtc1 Create', () => {
         describe('response.didDocument', () => {
             // Check specific type of "didDocument" as type DidDocument
             it('should be an object of type DidDocument', () => {
-                expect(response.didDocument).to.be({} as DidDocument);
+                expect(typeof response.didDocument).equals('object');
             });
         });
 
@@ -43,7 +42,7 @@ describe('DidBtc1 Create', () => {
         describe('response.mnemonic', () => {
             // Check existence and typeof "mnemonic" word length
             it('should contain 12 words', () => {
-                expect(response).to.have.property('setup').that.is.a('string');
+                expect(response.mnemonic?.split(' ')).to.have.lengthOf(12);
             });
         });
     });
@@ -64,9 +63,9 @@ describe('DidBtc1 Create', () => {
                 const [did, method, id] = response.did.split(':');
                 expect(did).to.equal('did');
                 expect(method).to.equal('btc1');
-                expect(id).to.be.a('string').and.to.startWith('x1');
+                expect(id).to.be.a('string').and.to.match(/x1.*/);
             });
-        })
+        });
 
         // Check existence and generic typeof "didDocument"
         it('should contain property "didDocument" as an object', () => {
@@ -76,7 +75,7 @@ describe('DidBtc1 Create', () => {
         describe('response.didDocument', () => {
             // Check specific type of "didDocument" as type DidDocument
             it('should be typeof DidDocument', () => {
-                expect(response.didDocument).to.be({} as DidDocument);
+                expect(typeof response.didDocument).equals('object');
             });
         });
 

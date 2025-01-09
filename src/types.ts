@@ -31,7 +31,7 @@ export interface DidBtc1CreateOptions<TKms> extends DidCreateOptions<TKms> {
     /** DID BTC1 Creation Type: deterministic or sidecar */
     type?: string;
     /** optional secp256k1 public key; required if type = 'deterministic' */
-    publicKey?: Uint8Array<ArrayBufferLike>;
+    publicKey?: Uint8Array;
     /** optional Jwk; required during method specific creation (deterministic or sidecar) */
     jwk?: Jwk;
     /**

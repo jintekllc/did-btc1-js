@@ -3,7 +3,7 @@ import { base64url, bech32 } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { generateMnemonic, mnemonicToSeed } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
-import { Jwk, LocalKeyManager, PrivateKeyJwk, PublicKeyJwk } from '@web5/crypto';
+import { Jwk, LocalKeyManager } from '@web5/crypto';
 import type {
   DidDocument,
   DidResolutionOptions,
@@ -49,9 +49,7 @@ export class DidBtc1 extends DidMethod {
 
   // TODO: Cleanup create; Generalize for both types. Abstract createDeterministic and createSidecar methods.
   // TODO: Remove LocalKeyManager and separate create options from Tkms
-  public static async create({
-    options = {}
-  }: {
+  public static async create({ options = {} }: {
     options?: DidBtc1CreateOptions<LocalKeyManager>;
   } = {}): Promise<DidBtc1CreateResponse> {
     // Validate DID-method-specific requirements to prevent keys from being generated unnecessarily.
@@ -78,13 +76,14 @@ export class DidBtc1 extends DidMethod {
     }
 
     // Set the networkName to the default value if not provided.
-    options.network = DidBtc1Network[options?.network ?? 'mainnet' as keyof typeof DidBtc1Network];
+    options.network = options.network ?? 'mainnet';
     options.version = options.version ?? 1;
 
     const networkName = options.network;
     // Set the network based on the options above.
-    const isMainnet = networkName === DidBtc1Network.mainnet;
-    const network = isMainnet ? networks.bitcoin
+    const isMainnet = DidBtc1Network[options.network as keyof typeof DidBtc1Network];
+    const network = isMainnet
+      ? networks.bitcoin
       : [DidBtc1Network.testnet, DidBtc1Network.signet].includes(networkName as DidBtc1Network)
         ? networks.testnet
         : networks.regtest;
@@ -148,7 +147,7 @@ export class DidBtc1 extends DidMethod {
 
     // Call createDeterministic or createSidecar based on options.
     if (!!options.type && options.type?.toLowerCase() !== 'deterministic') {
-    // Return DID and DID Document.
+      // Return DID and DID Document.
       return await this.createSidecar({ interDidDoc, options });
     }
 
@@ -186,7 +185,7 @@ export class DidBtc1 extends DidMethod {
           controller: did,
           publicKeyJwk: jwk
         }]
-      }
+      } as DidDocument
     };
   }
 
@@ -216,7 +215,7 @@ export class DidBtc1 extends DidMethod {
           controller: did,
           publicKeyJwk: jwk
         }]
-      }
+      } as DidDocument
     };
   }
 
