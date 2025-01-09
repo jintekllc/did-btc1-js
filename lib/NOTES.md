@@ -74,11 +74,15 @@
 
 ## CRUD Ops - CREATE
 
-* Section Notes
+* Notes
   * The title of section 4.1.2 is confusing by being labeled "offline".
   * Both cases can be done "offline".
   * The title of section 4.1.2, "Offline Did Document", implies that only the Sidecar method can be done offline
   * Examples of each did document would be helpful for understanding and implementation
+
+* Questions
+  * Are we not using the y coordinate of the hd pubkey for the JwkPubKey?
+    * The comments in @web5/crypto/jose/jwk state: "y MUST be present only for secp256k1 public keys"
 
 * Deterministic creation from a cryptographic seed
 * Sidecar creation from some initiating arbitrary DID document
